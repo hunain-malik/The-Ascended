@@ -32,12 +32,14 @@ model Media {
 
   favorite      Boolean  @default(false)
   hidden        Boolean  @default(false)
+  isHero        Boolean  @default(false)
 
   tags          MediaTag[]
 
   @@index([importedAt])
   @@index([kind])
   @@index([favorite])
+  @@index([isHero])
 }
 
 model Tag {

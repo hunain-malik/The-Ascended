@@ -2,6 +2,8 @@
 
 import clsx from 'clsx';
 
+import { useState } from 'react';
+
 type Item = {
   id: string;
   kind: string;
@@ -20,6 +22,11 @@ export default function Lightbox({
   onNav: (i: number) => void;
   onToggleFav: (id: string) => void;
 }) {
+  const [heroId, setHeroId] = useState<string | null>(null);
+  async function setAsHero(id: string) {
+    setHeroId((cur) => (cur === id ? null : id));
+    await fetch(`/api/media/${id}/hero`, { method: 'POST' });
+  }
   const item = items[index];
   const isVideo = item.kind === 'video' || item.kind === 'animation';
 
@@ -35,15 +42,27 @@ export default function Lightbox({
         Close · Esc
       </button>
 
-      <button
-        onClick={(e) => { e.stopPropagation(); onToggleFav(item.id); }}
-        className={clsx(
-          'absolute top-5 left-5 btn-ghost text-sm',
-          item.favorite && 'text-crimson-400 border-crimson-500/40',
-        )}
-      >
-        {item.favorite ? '♥ Favorited' : '♡ Favorite · F'}
-      </button>
+      <div className="absolute top-5 left-5 flex gap-2">
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleFav(item.id); }}
+          className={clsx(
+            'btn-ghost text-sm',
+            item.favorite && 'text-crimson-400 border-crimson-500/40',
+          )}
+        >
+          {item.favorite ? '♥ Favorited' : '♡ Favorite · F'}
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); setAsHero(item.id); }}
+          className={clsx(
+            'btn-ghost text-sm',
+            heroId === item.id && 'text-bone-200 border-bone-200/50',
+          )}
+          title="Use as hero on the gallery"
+        >
+          {heroId === item.id ? '★ Hero' : '☆ Set as hero'}
+        </button>
+      </div>
 
       {index > 0 && (
         <button
