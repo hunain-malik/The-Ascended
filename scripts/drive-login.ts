@@ -8,7 +8,7 @@
  *
  * Run: npm run drive:login
  */
-import 'dotenv/config';
+import './_env';
 import { google } from 'googleapis';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';

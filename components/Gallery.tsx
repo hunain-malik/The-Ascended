@@ -71,17 +71,39 @@ function Tile({ item, onOpen, onToggleFav }: { item: Item; onOpen: () => void; o
                    hover:ring-crimson-500/40 hover:shadow-[0_25px_60px_-20px_rgba(185,28,28,0.5)]"
         style={{ aspectRatio: aspect }}
       >
-        <img
-          loading="lazy"
-          src={`/api/media/${item.id}/thumb`}
-          alt={item.caption ?? ''}
-          className="w-full h-full object-cover transition duration-700 group-hover:scale-[1.04]"
-        />
+        {isVideo ? (
+          <video
+            preload="metadata"
+            muted
+            playsInline
+            // Loading the file with #t=0.1 nudges the browser to render the first frame
+            // as a poster without us having to extract it.
+            src={`/api/media/${item.id}/file#t=0.1`}
+            className="w-full h-full object-cover transition duration-700 group-hover:scale-[1.04] pointer-events-none"
+          />
+        ) : (
+          <img
+            loading="lazy"
+            src={`/api/media/${item.id}/thumb`}
+            alt={item.caption ?? ''}
+            className="w-full h-full object-cover transition duration-700 group-hover:scale-[1.04]"
+          />
+        )}
         {isVideo && (
-          <span className="absolute top-3 left-3 text-[10px] tracking-widest uppercase
-                           bg-black/60 backdrop-blur px-2 py-1 rounded-full text-bone-100/80">
-            {item.duration ? `${Math.round(item.duration)}s` : 'video'}
-          </span>
+          <>
+            <span className="absolute top-3 left-3 text-[10px] tracking-widest uppercase
+                             bg-black/60 backdrop-blur px-2 py-1 rounded-full text-bone-100/80">
+              {item.duration ? `${Math.round(item.duration)}s` : 'video'}
+            </span>
+            <span className="absolute inset-0 grid place-items-center opacity-0 group-hover:opacity-100 transition pointer-events-none">
+              <span className="w-14 h-14 rounded-full bg-black/60 backdrop-blur grid place-items-center
+                               border border-white/20">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" className="text-bone-50 translate-x-[2px]">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </span>
+            </span>
+          </>
         )}
       </button>
 

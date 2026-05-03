@@ -6,7 +6,7 @@
  *
  * Run: npm run sync
  */
-import 'dotenv/config';
+import './_env';
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import sharp from 'sharp';
@@ -135,7 +135,7 @@ async function importMessage(client: TelegramClient, msg: any, chatId: string) {
       width: meta.w ?? null,
       height: meta.h ?? null,
       duration: meta.dur ?? null,
-      bytes: meta.bytes ?? null,
+      bytes: meta.bytes != null ? BigInt(meta.bytes) : null,
       filePath: path.relative(MEDIA_DIR, fileAbs).replace(/\\/g, '/'),
       thumbPath: thumbed ? path.relative(MEDIA_DIR, thumbAbs).replace(/\\/g, '/') : null,
       caption: msg.message || null,

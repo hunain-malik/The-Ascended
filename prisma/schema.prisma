@@ -28,7 +28,7 @@ model Media {
   width         Int?
   height        Int?
   duration      Int?     // seconds, for video
-  bytes         Int?
+  bytes         BigInt?
 
   // Files on disk, relative to MEDIA_DIR
   filePath      String

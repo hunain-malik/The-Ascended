@@ -6,7 +6,7 @@
  *
  * Run: npm run sync:drive
  */
-import 'dotenv/config';
+import './_env';
 import path from 'node:path';
 import { promises as fs, createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
@@ -69,10 +69,13 @@ async function makeThumb(srcAbs: string, kind: string, dstAbs: string): Promise<
 
 async function importFile(drive: drive_v3.Drive, file: drive_v3.Schema$File, parentPath = '') {
   const kind = isMedia(file.mimeType);
-  if (!kind || !file.id || !file.mimeType) return;
+  if (!kind || !file.id || !file.mimeType) {
+    console.log(`· skip ${file.name} (mime=${file.mimeType ?? 'none'})`);
+    return;
+  }
 
   const exists = await prisma.media.findUnique({ where: { driveFileId: file.id } });
-  if (exists) return;
+  if (exists) { console.log(`· dedup ${file.name}`); return; }
 
   const taken = new Date(file.createdTime ?? Date.now());
   const subdir = path.join('drive', ymdPath(taken));
@@ -86,7 +89,7 @@ async function importFile(drive: drive_v3.Drive, file: drive_v3.Schema$File, par
   const fileAbs  = path.join(dir, baseName);
   const thumbAbs = path.join(thumbDir, baseName.replace(/\.[^.]+$/, '.webp'));
 
-  process.stdout.write(`↓ ${baseName} ... `);
+  console.log(`↓ ${baseName} (${kind}, ${file.size ?? '?'}b) ...`);
   try {
     const res = await drive.files.get(
       { fileId: file.id, alt: 'media', supportsAllDrives: true },
@@ -94,7 +97,7 @@ async function importFile(drive: drive_v3.Drive, file: drive_v3.Schema$File, par
     );
     await pipeline(res.data as any, createWriteStream(fileAbs));
   } catch (e) {
-    console.log(`fail: ${e instanceof Error ? e.message : e}`);
+    console.log(`  ✗ download failed for ${file.name}: ${e instanceof Error ? e.message : e}`);
     return;
   }
 
@@ -109,29 +112,35 @@ async function importFile(drive: drive_v3.Drive, file: drive_v3.Schema$File, par
     ? Math.round(Number(file.videoMediaMetadata.durationMillis) / 1000)
     : undefined;
 
-  await prisma.media.create({
-    data: {
-      source: 'drive',
-      driveFileId: file.id,
-      drivePath: parentPath ? `${parentPath}/${file.name}` : file.name,
-      kind,
-      mime: file.mimeType,
-      width: w ?? null,
-      height: h ?? null,
-      duration: dur ?? null,
-      bytes: Number(file.size ?? 0) || null,
-      filePath: path.relative(MEDIA_DIR, fileAbs).replace(/\\/g, '/'),
-      thumbPath: thumbed ? path.relative(MEDIA_DIR, thumbAbs).replace(/\\/g, '/') : null,
-      caption: file.description ?? null,
-      takenAt: taken,
-    },
-  });
-  console.log('ok');
+  try {
+    await prisma.media.create({
+      data: {
+        source: 'drive',
+        driveFileId: file.id,
+        drivePath: parentPath ? `${parentPath}/${file.name}` : file.name,
+        kind,
+        mime: file.mimeType,
+        width: w ?? null,
+        height: h ?? null,
+        duration: dur ?? null,
+        bytes: file.size ? BigInt(file.size) : null,
+        filePath: path.relative(MEDIA_DIR, fileAbs).replace(/\\/g, '/'),
+        thumbPath: thumbed ? path.relative(MEDIA_DIR, thumbAbs).replace(/\\/g, '/') : null,
+        caption: file.description ?? null,
+        takenAt: taken,
+      },
+    });
+    console.log(`  ✓ ${file.name}`);
+  } catch (e) {
+    console.log(`  ✗ db insert failed for ${file.name}: ${e instanceof Error ? e.message : e}`);
+  }
 }
 
 async function listFolderRecursive(drive: drive_v3.Drive, folderId: string, parentPath = ''): Promise<void> {
   let pageToken: string | undefined;
+  let pageNum = 0;
   do {
+    pageNum++;
     const res = await drive.files.list({
       q: `'${folderId}' in parents and trashed = false`,
       fields: 'nextPageToken, files(id, name, mimeType, size, createdTime, description, imageMediaMetadata, videoMediaMetadata)',
@@ -140,11 +149,14 @@ async function listFolderRecursive(drive: drive_v3.Drive, folderId: string, pare
       includeItemsFromAllDrives: true,
       supportsAllDrives: true,
     });
-    for (const f of res.data.files ?? []) {
+    const files = res.data.files ?? [];
+    console.log(`  page ${pageNum} of ${parentPath || folderId}: ${files.length} entries`);
+    for (const f of files) {
       if (f.mimeType === 'application/vnd.google-apps.folder') {
         await listFolderRecursive(drive, f.id!, parentPath ? `${parentPath}/${f.name}` : f.name!);
       } else {
-        await importFile(drive, f, parentPath);
+        try { await importFile(drive, f, parentPath); }
+        catch (e) { console.log(`  ✗ unexpected for ${f.name}: ${e instanceof Error ? e.message : e}`); }
       }
     }
     pageToken = res.data.nextPageToken ?? undefined;
