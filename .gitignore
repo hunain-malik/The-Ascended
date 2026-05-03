@@ -5,6 +5,9 @@
 /data/
 /thumbnails/
 /secrets/
+prisma/data/
+**/*.db
+**/*.db-journal
 *.session
 *.session-journal
 telegram.session*

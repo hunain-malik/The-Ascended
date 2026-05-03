@@ -20,9 +20,13 @@ async function main() {
   const hash = await bcrypt.hash(password, 12);
   const secret = crypto.randomBytes(32).toString('hex');
 
+  // @next/env (dotenv-expand) interpolates $VAR by default and would mangle
+  // the bcrypt hash. Escape every $ so the value survives.
+  const escapedHash = hash.replace(/\$/g, '\\$');
+
   console.log('\nAdd these to your .env.local:\n');
   console.log(`AUTH_USERNAME=${username}`);
-  console.log(`AUTH_PASSWORD_HASH=${hash}`);
+  console.log(`AUTH_PASSWORD_HASH=${escapedHash}`);
   console.log(`SESSION_SECRET=${secret}\n`);
 }
 
