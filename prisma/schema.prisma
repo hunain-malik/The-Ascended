@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Media {
+  id            String   @id @default(cuid())
+  // Telegram identifiers (so we never re-import the same message)
+  tgChatId      String
+  tgMessageId   String
+  tgFileId      String?
+  tgUniqueId    String?  @unique
+
+  kind          String   // "photo" | "video" | "animation" | "document"
+  mime          String?
+  width         Int?
+  height        Int?
+  duration      Int?     // seconds, for video
+  bytes         Int?
+
+  // Files on disk, relative to MEDIA_DIR
+  filePath      String
+  thumbPath     String?
+
+  caption       String?
+  takenAt       DateTime?
+  importedAt    DateTime @default(now())
+
+  favorite      Boolean  @default(false)
+  hidden        Boolean  @default(false)
+
+  tags          MediaTag[]
+
+  @@index([importedAt])
+  @@index([kind])
+  @@index([favorite])
+}
+
+model Tag {
+  id     String     @id @default(cuid())
+  name   String     @unique
+  media  MediaTag[]
+}
+
+model MediaTag {
+  mediaId String
+  tagId   String
+  media   Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  tag     Tag   @relation(fields: [tagId],   references: [id], onDelete: Cascade)
+  @@id([mediaId, tagId])
+}
+
+model SyncState {
+  id            Int      @id @default(1)
+  lastMessageId String?
+  lastRunAt     DateTime?
+  lastError     String?
+}
