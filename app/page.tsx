@@ -51,12 +51,12 @@ export default async function Home({
       />
 
       {items.length === 0 ? (
-        <EmptyState />
+        <EmptyState filter={sp.filter} q={sp.q} />
       ) : (
         <>
           {!sp.filter && !sp.q && <HeroBanner />}
           <div className="px-4 pb-24 sm:px-8">
-            <Gallery items={items} />
+            <Gallery key={`${sp.filter ?? 'all'}|${sp.q ?? ''}`} items={items} />
           </div>
         </>
       )}
@@ -64,21 +64,25 @@ export default async function Home({
   );
 }
 
-function EmptyState() {
+function EmptyState({ filter, q }: { filter?: string; q?: string }) {
+  const filtered = !!filter || !!q;
   return (
     <div className="relative grid place-items-center min-h-[70vh] text-center px-6 animate-fadeIn overflow-hidden">
       <AmbientBackdrop intensity={0.9} />
       <div className="relative">
         <h2 className="heading-serif text-6xl text-bone-50 leading-none">
-          <GlowHeading>Nothing yet.</GlowHeading>
+          <GlowHeading>{filtered ? 'Nothing here yet.' : 'Nothing yet.'}</GlowHeading>
         </h2>
         <p className="mt-6 text-bone-200/60 max-w-md mx-auto tracking-wide">
-          The vault is empty. Run the Telegram sync — anything new in your
-          Saved Messages will land here within seconds.
+          {filtered
+            ? 'Nothing matches this filter — try another tab or clear the search.'
+            : 'The vault is empty. Run the sync — content lands here within seconds.'}
         </p>
-        <pre className="mt-8 inline-block glass px-5 py-3 rounded-full text-xs text-bone-100/80 tracking-widest">
-          npm&nbsp;run&nbsp;sync
-        </pre>
+        {!filtered && (
+          <pre className="mt-8 inline-block glass px-5 py-3 rounded-full text-xs text-bone-100/80 tracking-widest">
+            npm&nbsp;run&nbsp;sync
+          </pre>
+        )}
       </div>
     </div>
   );

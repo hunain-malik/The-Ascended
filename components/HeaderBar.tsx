@@ -8,8 +8,8 @@ import clsx from 'clsx';
 const tabs = [
   { id: 'all',       label: 'All' },
   { id: 'favorites', label: 'Favorites' },
-  { id: 'photo',     label: 'Stills' },
-  { id: 'video',     label: 'Motion' },
+  { id: 'photo',     label: 'Photos' },
+  { id: 'video',     label: 'Videos' },
 ] as const;
 
 export default function HeaderBar({
