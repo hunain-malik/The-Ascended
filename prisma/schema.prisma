@@ -9,11 +9,19 @@ datasource db {
 
 model Media {
   id            String   @id @default(cuid())
-  // Telegram identifiers (so we never re-import the same message)
-  tgChatId      String
-  tgMessageId   String
+
+  // Where this came from
+  source        String   @default("telegram")  // "telegram" | "drive"
+
+  // Telegram identifiers (nullable for non-telegram sources)
+  tgChatId      String?
+  tgMessageId   String?
   tgFileId      String?
   tgUniqueId    String?  @unique
+
+  // Google Drive identifiers
+  driveFileId   String?  @unique
+  drivePath     String?
 
   kind          String   // "photo" | "video" | "animation" | "document"
   mime          String?
@@ -40,6 +48,7 @@ model Media {
   @@index([kind])
   @@index([favorite])
   @@index([isHero])
+  @@index([source])
 }
 
 model Tag {
@@ -56,9 +65,10 @@ model MediaTag {
   @@id([mediaId, tagId])
 }
 
+/// One row per source ("telegram", "drive"). Stores cursor + last error.
 model SyncState {
-  id            Int      @id @default(1)
-  lastMessageId String?
+  source        String   @id  // "telegram" | "drive"
+  cursor        String?       // tg: lastMessageId; drive: changes pageToken
   lastRunAt     DateTime?
   lastError     String?
 }

@@ -125,6 +125,7 @@ async function importMessage(client: TelegramClient, msg: any, chatId: string) {
 
   await prisma.media.create({
     data: {
+      source: 'telegram',
       tgChatId: chatId,
       tgMessageId: String(msg.id),
       tgUniqueId: meta.uniqueId ?? null,
@@ -146,11 +147,11 @@ async function importMessage(client: TelegramClient, msg: any, chatId: string) {
 
 async function backfill(client: TelegramClient) {
   const state = await prisma.syncState.upsert({
-    where: { id: 1 },
+    where: { source: 'telegram' },
     update: {},
-    create: { id: 1 },
+    create: { source: 'telegram' },
   });
-  const minId = state.lastMessageId ? Number(state.lastMessageId) : 0;
+  const minId = state.cursor ? Number(state.cursor) : 0;
 
   console.log(`↻ backfill from ${SOURCE} (since msgId>${minId})`);
   const entity = await client.getEntity(SOURCE);
@@ -164,8 +165,8 @@ async function backfill(client: TelegramClient) {
   }
 
   await prisma.syncState.update({
-    where: { id: 1 },
-    data: { lastMessageId: String(highest), lastRunAt: new Date(), lastError: null },
+    where: { source: 'telegram' },
+    data: { cursor: String(highest), lastRunAt: new Date(), lastError: null },
   });
 }
 
@@ -195,7 +196,7 @@ async function main() {
     try { await backfill(client); }
     catch (e) {
       console.error('backfill error:', e);
-      await prisma.syncState.update({ where: { id: 1 }, data: { lastError: String(e) } }).catch(() => {});
+      await prisma.syncState.update({ where: { source: 'telegram' }, data: { lastError: String(e) } }).catch(() => {});
     }
     await new Promise((r) => setTimeout(r, INTERVAL));
   }

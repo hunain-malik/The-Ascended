@@ -4,9 +4,12 @@
 /media/
 /data/
 /thumbnails/
+/secrets/
 *.session
 *.session-journal
 telegram.session*
+google-credentials*.json
+google-token*.json
 
 # env / secrets
 .env
