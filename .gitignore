@@ -4,9 +4,15 @@
 /media/
 /data/
 /thumbnails/
+/secrets/
+prisma/data/
+**/*.db
+**/*.db-journal
 *.session
 *.session-journal
 telegram.session*
+google-credentials*.json
+google-token*.json
 
 # env / secrets
 .env

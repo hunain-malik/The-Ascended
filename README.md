@@ -1,7 +1,7 @@
 # The Ascended
 
-Private personal archive. Pulls media from a Telegram chat (default: Saved Messages)
-into a sleek, password-gated gallery.
+Private personal archive. Pulls media from **Telegram** (default: Saved Messages) and
+**Google Drive** into a single sleek, password-gated gallery.
 
 > **Private by design.** Only code lives on GitHub — no media, no secrets, no DB.
 > The `.gitignore` blocks `/media`, `/data`, `*.session`, and `.env*`.
@@ -11,6 +11,7 @@ into a sleek, password-gated gallery.
 - SQLite via Prisma
 - iron-session auth (single user, bcrypt'd password from env)
 - gramjs (`telegram` npm package) for the Telegram client
+- googleapis for Drive
 - sharp for thumbnail generation
 
 ## First-time setup
@@ -48,7 +49,7 @@ TG_SOURCE=me
 
 ## Running
 
-Two processes — keep both running:
+Up to three processes — keep them running:
 
 ```bash
 # terminal 1: web app
@@ -56,9 +57,31 @@ npm run dev          # http://localhost:3000
 
 # terminal 2: telegram sync (live + periodic backfill)
 npm run sync
+
+# terminal 3 (optional): google drive sync
+npm run sync:drive
 ```
 
 Open http://localhost:3000 → log in → enjoy.
+
+## Google Drive setup (optional)
+
+```bash
+# 1. console.cloud.google.com -> New project
+# 2. Enable "Google Drive API"
+# 3. OAuth consent screen -> External, Testing, add your gmail as test user
+# 4. Credentials -> Create OAuth client ID -> Desktop app -> download JSON
+# 5. Save as ./secrets/google-credentials.json
+# 6. Right-click the Drive folder you want to pull from -> "Share with anyone with the link"
+#    is NOT needed; ownership is enough. Copy the folder URL.
+#    The ID is the part after /folders/ -> set as DRIVE_FOLDER_ID in .env.local
+
+npm run drive:login   # paste the auth code from the redirect URL
+npm run sync:drive    # backfills the folder, then live-tracks new files
+```
+
+The Drive worker filters to image/* and video/* mime types. Folders nest recursively.
+Drive items appear in the same gallery alongside Telegram items.
 
 ## How sync works
 - `TG_SOURCE=me` watches your Saved Messages.
@@ -71,9 +94,12 @@ Open http://localhost:3000 → log in → enjoy.
 ## Layout on disk
 ```
 media/
-  YYYY/MM/tg_<chat>_<msgid>.<ext>      # originals
-  thumbs/YYYY/MM/...webp                # gallery thumbnails
-data/ascended.db                        # sqlite metadata
+  YYYY/MM/tg_<chat>_<msgid>.<ext>          # telegram originals
+  drive/YYYY/MM/gd_<file-id>.<ext>          # drive originals
+  thumbs/...webp                            # gallery thumbnails (mirrors structure)
+data/ascended.db                            # sqlite metadata
+secrets/google-credentials.json             # OAuth client (gitignored)
+secrets/google-token.json                   # OAuth refresh token (gitignored)
 ```
 
 ## Keyboard shortcuts (in the lightbox)

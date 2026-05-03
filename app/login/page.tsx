@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import AmbientBackdrop from '@/components/AmbientBackdrop';
+import GlowHeading from '@/components/GlowHeading';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,11 +38,15 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen grid place-items-center px-6">
-      <div className="w-full max-w-md animate-fadeIn">
+    <main className="relative min-h-screen grid place-items-center px-6 overflow-hidden">
+      <AmbientBackdrop intensity={1.1} />
+      <div className="w-full max-w-md animate-fadeIn relative">
         <div className="text-center mb-10">
-          <h1 className="heading-serif text-6xl text-bone-50">The Ascended</h1>
-          <p className="mt-3 text-bone-200/70 tracking-[0.3em] uppercase text-xs">
+          <h1 className="heading-serif text-6xl text-bone-50 leading-none">
+            <GlowHeading>The</GlowHeading>{' '}
+            <GlowHeading className="text-crimson-400">Ascended</GlowHeading>
+          </h1>
+          <p className="mt-4 text-bone-200/70 tracking-[0.4em] uppercase text-[10px]">
             private &nbsp;·&nbsp; sanctum
           </p>
         </div>

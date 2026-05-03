@@ -3,6 +3,9 @@ import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/session';
 import Gallery from '@/components/Gallery';
 import HeaderBar from '@/components/HeaderBar';
+import HeroBanner from '@/components/HeroBanner';
+import AmbientBackdrop from '@/components/AmbientBackdrop';
+import GlowHeading from '@/components/GlowHeading';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,28 +51,38 @@ export default async function Home({
       />
 
       {items.length === 0 ? (
-        <EmptyState />
+        <EmptyState filter={sp.filter} q={sp.q} />
       ) : (
-        <div className="px-4 pb-24 sm:px-8">
-          <Gallery items={items} />
-        </div>
+        <>
+          {!sp.filter && !sp.q && <HeroBanner />}
+          <div className="px-4 pb-24 sm:px-8">
+            <Gallery key={`${sp.filter ?? 'all'}|${sp.q ?? ''}`} items={items} />
+          </div>
+        </>
       )}
     </main>
   );
 }
 
-function EmptyState() {
+function EmptyState({ filter, q }: { filter?: string; q?: string }) {
+  const filtered = !!filter || !!q;
   return (
-    <div className="grid place-items-center min-h-[60vh] text-center px-6 animate-fadeIn">
-      <div>
-        <h2 className="heading-serif text-5xl text-bone-50">Nothing yet.</h2>
-        <p className="mt-4 text-bone-200/60 max-w-md mx-auto">
-          The vault is empty. Run the Telegram sync to begin pulling from
-          Saved Messages.
+    <div className="relative grid place-items-center min-h-[70vh] text-center px-6 animate-fadeIn overflow-hidden">
+      <AmbientBackdrop intensity={0.9} />
+      <div className="relative">
+        <h2 className="heading-serif text-6xl text-bone-50 leading-none">
+          <GlowHeading>{filtered ? 'Nothing here yet.' : 'Nothing yet.'}</GlowHeading>
+        </h2>
+        <p className="mt-6 text-bone-200/60 max-w-md mx-auto tracking-wide">
+          {filtered
+            ? 'Nothing matches this filter — try another tab or clear the search.'
+            : 'The vault is empty. Run the sync — content lands here within seconds.'}
         </p>
-        <pre className="mt-6 inline-block glass px-4 py-2 rounded-lg text-xs text-bone-100/70">
-          npm run sync
-        </pre>
+        {!filtered && (
+          <pre className="mt-8 inline-block glass px-5 py-3 rounded-full text-xs text-bone-100/80 tracking-widest">
+            npm&nbsp;run&nbsp;sync
+          </pre>
+        )}
       </div>
     </div>
   );

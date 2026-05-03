@@ -5,7 +5,7 @@
  *
  * Get TG_API_ID and TG_API_HASH from https://my.telegram.org -> API development tools
  */
-import 'dotenv/config';
+import './_env';
 import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions/index.js';
 import readline from 'node:readline/promises';
