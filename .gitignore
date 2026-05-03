@@ -1,0 +1,42 @@
+# ==========================================================
+# CRITICAL: never commit private media, secrets, or db
+# ==========================================================
+/media/
+/data/
+/thumbnails/
+*.session
+*.session-journal
+telegram.session*
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# next / node
+/node_modules
+/.next/
+/out/
+/build
+/dist
+next-env.d.ts
+*.tsbuildinfo
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# misc
+.pnp
+.pnp.*
+.yarn/install-state.gz
+coverage/
