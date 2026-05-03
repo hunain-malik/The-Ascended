@@ -16,7 +16,10 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const MEDIA_DIR = path.resolve(process.env.MEDIA_DIR ?? './media');
-const FOLDER_ID = process.env.DRIVE_FOLDER_ID || '';
+const FOLDER_IDS = (process.env.DRIVE_FOLDER_ID || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 const INTERVAL  = Number(process.env.DRIVE_SYNC_INTERVAL ?? 120) * 1000;
 const CRED_PATH  = path.resolve(process.env.GOOGLE_CREDENTIALS_PATH ?? './secrets/google-credentials.json');
 const TOKEN_PATH = path.resolve(process.env.GOOGLE_TOKEN_PATH       ?? './secrets/google-token.json');
@@ -167,8 +170,14 @@ async function pollChanges(drive: drive_v3.Drive, token: string): Promise<string
     });
     for (const ch of r.data.changes ?? []) {
       if (!ch.file || ch.removed) continue;
-      // If we have a folder filter, only import descendants.
-      if (FOLDER_ID && !(await isInFolder(drive, ch.file.id!, FOLDER_ID))) continue;
+      // If we have folder filters, only import descendants of any of them.
+      if (FOLDER_IDS.length) {
+        let inAny = false;
+        for (const root of FOLDER_IDS) {
+          if (await isInFolder(drive, ch.file.id!, root)) { inAny = true; break; }
+        }
+        if (!inAny) continue;
+      }
       await importFile(drive, ch.file).catch((e) => console.error('change import:', e));
     }
     if (r.data.newStartPageToken) newStart = r.data.newStartPageToken;
@@ -210,11 +219,14 @@ async function main() {
 
   // First-time backfill
   if (!state.cursor) {
-    if (!FOLDER_ID) {
+    if (FOLDER_IDS.length === 0) {
       console.warn('DRIVE_FOLDER_ID is empty — skipping recursive backfill (would scan your whole Drive).');
     } else {
-      console.log(`↻ backfilling Drive folder ${FOLDER_ID}`);
-      await listFolderRecursive(drive, FOLDER_ID);
+      for (const root of FOLDER_IDS) {
+        console.log(`↻ backfilling Drive folder ${root}`);
+        try { await listFolderRecursive(drive, root); }
+        catch (e) { console.error(`  failed for ${root}:`, e instanceof Error ? e.message : e); }
+      }
     }
     const start = await startPageToken(drive);
     state = await prisma.syncState.update({
