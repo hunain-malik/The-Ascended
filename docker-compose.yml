@@ -1,0 +1,19 @@
+# Self-hosted deployment (VPS / home server / anything with Docker).
+#
+#   1. copy your .env.local next to this file (same one you use in dev —
+#      the escaped AUTH_PASSWORD_HASH works as-is, Next.js loads it)
+#   2. docker compose up -d --build
+#   3. put google-credentials.json / google-token.json (if using Drive)
+#      into ./storage/secrets/
+#
+# Everything private (db, media, secrets) lands in ./storage — gitignored.
+services:
+  ascended:
+    build: .
+    container_name: ascended
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./storage:/app/storage
+      - ./.env.local:/app/.env.local:ro

@@ -64,6 +64,68 @@ npm run sync:drive
 
 Open http://localhost:3000 → log in → enjoy.
 
+## Deploying (the real site, not an instructions page)
+
+> **Why the GitHub Pages URL shows the README:** GitHub Pages only serves
+> static files — it runs the repo through Jekyll and renders `README.md` as
+> the homepage. It physically cannot run this app (Node server, login API,
+> SQLite, private media). Turn it off in **Settings → Pages → Source: None**
+> and deploy with one of the options below instead. Once deployed, visiting
+> the site lands on `/login`, and logging in is what unlocks the gallery —
+> exactly like local dev.
+
+The repo ships a production `Dockerfile` that runs the web app **and**
+auto-starts the Telegram/Drive sync workers whenever their credentials are
+present. All private state (db, media, secrets) lives under a single
+`/app/storage` volume.
+
+### Option A — any box with Docker (VPS, home server)
+
+```bash
+cp .env.local <deploy-dir>/   # same file as dev; escaped hash works as-is
+docker compose up -d --build
+# db + media + secrets appear under ./storage (gitignored)
+```
+
+Then put it behind TLS (Caddy, Cloudflare Tunnel, or Tailscale for
+private-only access). The session cookie is `Secure` in production, so
+login **requires HTTPS** — plain `http://` on a LAN will silently refuse
+to keep you logged in.
+
+### Option B — Fly.io (managed, has persistent volumes)
+
+```bash
+fly launch --no-deploy                          # uses the included fly.toml
+fly volumes create ascended_storage --size 10
+fly secrets set AUTH_USERNAME=ascended \
+  AUTH_PASSWORD_HASH='$2a$12$...' \             # RAW hash in single quotes —
+  SESSION_SECRET=... \                          # \$-escaping is ONLY for .env files
+  TG_API_ID=... TG_API_HASH=... TG_SESSION='...'
+fly deploy
+```
+
+For Drive sync, upload the OAuth files into the volume once:
+`fly ssh sftp shell` → put `google-credentials.json` and
+`google-token.json` into `/app/storage/secrets/`, then `fly apps restart`.
+
+Railway / Render work the same way: point them at the repo, they pick up the
+`Dockerfile`; attach a persistent volume at `/app/storage` and set the same
+env vars (raw, unescaped values).
+
+### Getting the credentials for a remote deploy
+
+Run these locally, then copy the values into your host's secrets:
+
+```bash
+npm run set-password   # -> AUTH_PASSWORD_HASH + SESSION_SECRET
+npm run sync:login     # -> TG_SESSION (interactive, needs your phone)
+npm run drive:login    # -> secrets/google-token.json (optional)
+```
+
+Media synced before deploying can be seeded by copying your local `media/`
+and `prisma/data/ascended.db` into the volume — or just let the workers
+re-sync from scratch on the server.
+
 ## Google Drive setup (optional)
 
 ```bash

@@ -1,0 +1,29 @@
+# Fly.io deployment. See README "Deploying" for the full walkthrough.
+#
+#   fly launch --no-deploy        # creates the app, keeps this file
+#   fly volumes create ascended_storage --size 10
+#   fly secrets set AUTH_USERNAME=... AUTH_PASSWORD_HASH='...' SESSION_SECRET=... \
+#                   TG_API_ID=... TG_API_HASH=... TG_SESSION='...'
+#   fly deploy
+#
+# NOTE: when setting AUTH_PASSWORD_HASH as a secret, use the RAW bcrypt hash
+# in single quotes — the backslash-escaping is only for .env files.
+app = "the-ascended"
+primary_region = "sin"
+
+[build]
+
+[mounts]
+  source = "ascended_storage"
+  destination = "/app/storage"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "off"   # sync workers must keep running
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"

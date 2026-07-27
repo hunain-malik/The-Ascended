@@ -3,6 +3,7 @@
 # ==========================================================
 /media/
 /data/
+/storage/
 /thumbnails/
 /secrets/
 prisma/data/
