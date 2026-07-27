@@ -41,7 +41,11 @@ async function main() {
   const server = http.createServer();
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
   const port = (server.address() as AddressInfo).port;
-  const redirectUri = `http://localhost:${port}`;
+  // Use the IP literal, not "localhost": on Windows the browser may resolve
+  // localhost to ::1 (IPv6) while we listen on 127.0.0.1, and the redirect
+  // dies with "site can't be reached". Google allows any loopback IP for
+  // Desktop clients and recommends 127.0.0.1.
+  const redirectUri = `http://127.0.0.1:${port}`;
 
   const oauth2 = new google.auth.OAuth2(c.client_id, c.client_secret, redirectUri);
   const url = oauth2.generateAuthUrl({
